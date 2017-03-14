@@ -12,74 +12,132 @@ library("ggplot2")
 library("segmented")
 library("plotrix")
 library("gridExtra")
+library("LoLinR")
 
 #Required Data files
 
 # Set Working Directory:
 setwd("/Users/hputnam/MyProjects/Mcap_PGA_TGA/RAnalysis/Data/") #set working
 mainDir<-"/Users/hputnam/MyProjects/Mcap_PGA_TGA/RAnalysis/" #set main directory
-path<-"/Users/hputnam/MyProjects/Mcap_PGA_TGA/RAnalysis/Data/Respirometry" #the location of all your respirometry files
 
-# #find all the data files
-# file.names<-list.files(path=path) #list all the file names in your data and sample directory
-# file.names <- file.names[grep("[.]csv", file.names)] # select only the csv files
-# 
-# #create an empty dataframe to put the Slope values in
-# nrow<-length(file.names) #set number of rows to the number of samples
-# Slopes <- matrix(nrow = nrow, ncol = 4) #set the dimensions of the dataframe
-# rownames(Slopes)<-file.names #identify row names
-# colnames(Slopes)<-c('Sample.ID','Photo','Resp','Eqs') #identify column names
-# 
-# #run a for loop to bring in the respirometry files one at a time and calculate 2 slopes per file
-# for(i in 1: length(file.names)) {
-#   Data<-read.csv(text=paste0(head(readLines(file.names[i]), -4), collapse="\n"), header=T, sep=",", na.string="NA",as.is=T)
-#   Data<-Data[,c(1,2,7,9,16,20)] #remove unnecessary columns
-#   
-#   #name of the file without .csv
-#   name<-unlist(strsplit(file.names[i], split='.', fixed=TRUE))[1]
-#   
-#   #find the max to indicate break point
-#   #Data$delta_t[which.max(Data$Value)]
-#   #identify the linear model
-#   lin.mod <- lm(Value~delta_t, data=Data)
-# 
-#   #Calculate Slopes
-#   Slopes[i,1]<-name #add sample name to data output
-#   Slopes[i,2]<-lin.mod$coefficients[1] #add y intercept
-#   Slopes[i,3]<-lin.mod$coefficients[3] #add slope
-# 
-# }
-# 
-# #output in µmol per liter oxygen per min
-# Slopes <- data.frame(Slopes)
-# 
-# class(Slopes)
-# 
-# par(mfrow=c(6,6))
-# par(mar=c(0,1,1,1))
-# for(i in 1: length(file.names)) {
-#   Data<-read.csv(text=paste0(head(readLines(file.names[i]), -4), collapse="\n"), header=T, sep=",", na.string="NA",as.is=T)
-#   plot(Value~delta_t, pch=16, cex=0.5, data=Data)
-# }
-# 
-# 
-# par(mfrow=c(6,6))
-# par(mar=c(0,1,1,1))
-# for(i in 1: length(file.names)) {
-#   Data<-read.csv(text=paste0(head(readLines(file.names[i]), -4), collapse="\n"), header=T, sep=",", na.string="NA",as.is=T)
-#   plot(Value~delta_t, pch=16, cex=0.5, data=Data)
-#   plot(Slopes, add=T, color="red")
-# }
-# 
-# #Load sample data including chamber volume and sample displacement
-# #remove data and underscore from ID
-# #merge with sample ID
-# 
-# #Need to subtract blanks
-# 
-# #Need to account for volume displacement in rate
-# 
-# #Need to normalize to surface area
+#PHTOTSYNTHESIS
+path.p<-"/Users/hputnam/MyProjects/Mcap_PGA_TGA/RAnalysis/Data/Respirometry/Photo" #the location of all your respirometry files
+file.names<-list.files(path = path.p, pattern = "csv$")
+photo.R <- data.frame(matrix(NA, nrow=length(file.names), ncol=3, dimnames=list(file.names,c("Sample.ID","Intercept", "Slope")))) #generate a 3 column dataframe with specific column names
+
+for(i in 1:length(file.names)) { # for every file in list start at the first and run this following function
+  Photo.Data <-read.table(file.path(path.p,file.names[i]), header=TRUE, sep=",", na.string="NA", as.is=TRUE, fileEncoding="latin1") #reads in the data files
+  Photo.Data  <- Photo.Data [,c(9,16)]
+  n<-dim(Photo.Data )[1]
+  Photo.Data <-Photo.Data [120:(n-3),]
+  n<-dim(Photo.Data )[1]
+  Photo.Data $sec <- 1:n
+  pdf("/Users/hputnam/MyProjects/Mcap_PGA_TGA/RAnalysis/Output/photo.thinning.pdf")
+  par(omi=rep(0.3, 4))
+  par(mfrow=c(1,2))
+  plot(Value ~ sec, data=Photo.Data , 
+       xlab='Time (seconds)', ylab=substitute(' O'[2]~' (µmol/L)'), type='n', axes=FALSE)
+  usr  <-  par('usr')
+  rect(usr[1], usr[3], usr[2], usr[4], col='grey90', border=NA)
+  whiteGrid()
+  box()
+  points(Photo.Data $Value ~ Photo.Data $sec, pch=16, col=transparentColor('dodgerblue2', 0.6), cex=1.1)
+  axis(1)
+  axis(2, las=1)
+  
+  Photo.Data   <-  thinData(Photo.Data , by=10)$newData1
+  Photo.Data $sec <- as.numeric(rownames(Photo.Data ))
+  plot(Value ~ sec, data=Photo.Data , xlab='Time (seconds)', ylab=substitute(' O'[2]~' (µmol/L)'), type='n', axes=FALSE)
+  usr  <-  par('usr')
+  rect(usr[1], usr[3], usr[2], usr[4], col='grey90', border=NA)
+  whiteGrid()
+  box()
+  points(Photo.Data $Value ~ Photo.Data $sec, pch=16, col=transparentColor('dodgerblue2', 0.6), cex=1.1)
+  axis(1)
+  axis(2, las=1)
+  dev.off()
+  
+  Regs  <-  rankLocReg(xall=Photo.Data $sec, yall=Photo.Data $Value, alpha=0.2, 
+                       method="pc", verbose=TRUE) 
+  pdf("/Users/hputnam/MyProjects/Mcap_PGA_TGA/RAnalysis/Output/photo.figs.pdf")
+  plot(Regs)
+  dev.off()
+  
+  photo.R[i,2:3] <- Regs$allRegs[1,c(4,5)] #inserts them in the dataframe
+  photo.R[i,1] <- substr(file.names[i],1,8) #stores the file name in the Date column
+}
+
+photo.R$rate.min <- photo.R$Slope*60
+photo.R
+
+#RESPIRATION
+
+path.r<-"/Users/hputnam/MyProjects/Mcap_PGA_TGA/RAnalysis/Data/Respirometry/Resp/" #the location of all your respirometry files
+file.names.r<-list.files(path = path.r, pattern = "csv$")
+Resp.R <- data.frame(matrix(NA, nrow=length(file.names.r), ncol=3, dimnames=list(file.names.r,c("Sample.ID","Intercept", "Slope")))) #generate a 3 column dataframe with specific column names
+
+for(i in 1:length(file.names.r)) { # for every file in list start at the first and run this following function
+  Resp.Data <-read.table(file.path(path.r,file.names.r[i]), header=TRUE, sep=",", na.string="NA", as.is=TRUE, fileEncoding="latin1") #reads in the data files
+  Resp.Data  <- Resp.Data[,c(9,16)]
+  n<-dim(Resp.Data)[1]
+  Resp.Data <-Resp.Data[120:(n-3),]
+  n<-dim(Resp.Data)[1]
+  Resp.Data$sec <- 1:n
+  pdf("/Users/hputnam/MyProjects/Mcap_PGA_TGA/RAnalysis/Output/resp.thinning.pdf")
+  par(omi=rep(0.3, 4))
+  par(mfrow=c(1,2))
+  plot(Value ~ sec, data=Resp.Data , 
+       xlab='Time (seconds)', ylab=substitute(' O'[2]~' (µmol/L)'), type='n', axes=FALSE)
+  usr  <-  par('usr')
+  rect(usr[1], usr[3], usr[2], usr[4], col='grey90', border=NA)
+  whiteGrid()
+  box()
+  points(Resp.Data$Value ~ Resp.Data$sec, pch=16, col=transparentColor('dodgerblue2', 0.6), cex=1.1)
+  axis(1)
+  axis(2, las=1)
+  
+  Resp.Data  <-  thinData(Resp.Data, by=10)$newData1
+  Resp.Data$sec <- as.numeric(rownames(Resp.Data))
+  plot(Value ~ sec, data=Resp.Data, xlab='Time (seconds)', ylab=substitute(' O'[2]~' (µmol/L)'), type='n', axes=FALSE)
+  usr  <-  par('usr')
+  rect(usr[1], usr[3], usr[2], usr[4], col='grey90', border=NA)
+  whiteGrid()
+  box()
+  points(Resp.Data$Value ~ Resp.Data$sec, pch=16, col=transparentColor('dodgerblue2', 0.6), cex=1.1)
+  axis(1)
+  axis(2, las=1)
+  dev.off()
+  
+  Regs  <-  rankLocReg(xall=Resp.Data$sec, yall=Resp.Data$Value, alpha=0.2, 
+                       method="pc", verbose=TRUE) 
+  pdf("/Users/hputnam/MyProjects/Mcap_PGA_TGA/RAnalysis/Output/resp.figs.pdf")
+  plot(Regs)
+  dev.off()
+  
+  Resp.R[i,2:3] <- Regs$allRegs[1,c(4,5)] #inserts them in the dataframe
+  Resp.R[i,1] <- substr(file.names.r[i],1,8) #stores the file name in the Date column
+}
+
+Resp.R$rate.min <- Resp.R$Slope*60
+Resp.R
+
+
+Flux.Info <- read.csv(file="Respirometry_Data.csv", header=T)
+Flux.Info$Vol.L <- (Flux.Info$Chamber.Vol.mL-Flux.Info$Sample.Displacement.ml)/1000
+
+# Amb.Photo.Blank
+# High.Photo.Blank
+# Amb.Resp.Blank 
+# High.Resp.Blank
+
+
+
+#ANOTHER OPTION
+#want to find photosyn local slope
+#want to find resp local slope
+#want to identify upper and lower data points and 
+#then use them to extract all the unthinned data and re-run the regression
+
 
 #Load calculated data
 data <- read.csv("/Users/hputnam/MyProjects/Mcap_PGA_TGA/RAnalysis/Data/Respirometry_Data.csv", header=T, sep=",")
