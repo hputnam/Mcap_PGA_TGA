@@ -23,7 +23,7 @@ mainDir<-"/Users/hputnam/MyProjects/Mcap_PGA_TGA/RAnalysis/" #set main directory
 #PHTOTSYNTHESIS
 path.p<-"/Users/hputnam/MyProjects/Mcap_PGA_TGA/RAnalysis/Data/Respirometry/Photo" #the location of all your respirometry files
 file.names<-list.files(path = path.p, pattern = "csv$") #list all csv file names in the folder
-Photo.R <- data.frame(matrix(NA, nrow=length(file.names), ncol=3, dimnames=list(file.names,c("Fragment.ID","Intercept", "Slope")))) #generate a 3 column dataframe with specific column names
+Photo.R <- data.frame(matrix(NA, nrow=length(file.names), ncol=3, dimnames=list(file.names,c("Fragment.ID","Intercept", "µmol.L.sec")))) #generate a 3 column dataframe with specific column names
 
 for(i in 1:length(file.names)) { # for every file in list start at the first and run this following function
   Photo.Data <-read.table(file.path(path.p,file.names[i]), header=TRUE, sep=",", na.string="NA", as.is=TRUE, fileEncoding="latin1") #reads in the data files
@@ -73,7 +73,7 @@ Photo.R
 
 path.r<-"/Users/hputnam/MyProjects/Mcap_PGA_TGA/RAnalysis/Data/Respirometry/Resp/" #the location of all your respirometry files
 file.names.r<-list.files(path = path.r, pattern = "csv$")
-Resp.R <- data.frame(matrix(NA, nrow=length(file.names.r), ncol=3, dimnames=list(file.names.r,c("Fragment.ID","Intercept", "Slope")))) #generate a 3 column dataframe with specific column names
+Resp.R <- data.frame(matrix(NA, nrow=length(file.names.r), ncol=3, dimnames=list(file.names.r,c("Fragment.ID","Intercept", "µmol.L.sec")))) #generate a 3 column dataframe with specific column names
 
 for(i in 1:length(file.names.r)) { # for every file in list start at the first and run this following function
   Resp.Data <-read.table(file.path(path.r,file.names.r[i]), header=TRUE, sep=",", na.string="NA", as.is=TRUE, fileEncoding="latin1") #reads in the data files
@@ -122,7 +122,7 @@ Resp.R #view data
 
 #Load Sample Info
 Sample.Info <- read.csv(file="Respirometry_Data.csv", header=T) #read in volume and sample.info data
-Sample.Info$Vol.L <- (Sample.Info$Chamber.Vol.mL-Sample.Info$Sample.Displacement.ml)/1000 #calculate volume
+Sample.Info$Vol.L <- Sample.Info$Chamber.Vol.mL/1000 #calculate volume
 
 #Merge with sample info
 Resp <- merge(Resp.R,Sample.Info, by="Fragment.ID")
@@ -154,41 +154,32 @@ High.R.Blank <- Resp.R[which(Resp.R$Fragment.ID == "CO2Blank1.R"),3]
 Amb.indices <- (Resp$Treatment=="Ambient") # indices is a logical vector with TRUE and FALSE
 High.indices <- (Resp$Treatment=="High") # indices is a logical vector with TRUE and FALSE
 Resp$corr.rate <- NA
-Resp$corr.rate[Amb.indices] <- (Resp$rate.L.min - Amb.R.Blank)[Amb.indices]
-Resp$corr.rate[High.indices] <- (Resp$rate.L.min - High.R.Blank)[High.indices]
+Resp$corr.rate[Amb.indices] <- (Resp$µmol.L.sec - Amb.R.Blank)[Amb.indices]
+Resp$corr.rate[High.indices] <- (Resp$µmol.L.sec - High.R.Blank)[High.indices]
 
 #Photosynthesis
 Amb.indices <- (Photo$Treatment=="Ambient") # indices is a logical vector with TRUE and FALSE
 High.indices <- (Photo$Treatment=="High") # indices is a logical vector with TRUE and FALSE
 Photo$corr.rate <- NA
-Photo$corr.rate[Amb.indices] <- (Photo$rate.L.min - Amb.P.Blank)[Amb.indices]
-Photo$corr.rate[High.indices] <- (Photo$rate.L.min - High.P.Blank)[High.indices]
-
+Photo$corr.rate[Amb.indices] <- (Photo$µmol.L.sec - Amb.P.Blank)[Amb.indices]
+Photo$corr.rate[High.indices] <- (Photo$µmol.L.sec - High.P.Blank)[High.indices]
 
 #Convert to µmol L-1 min-1
-Photo$rate.L.min <- Photo$corr.rate*60 #converts to µmol L-1 min-1
-Resp$rate.L.min <- Resp$corr.rate*60 #converts to µmol L-1 min-1
+Photo$rate.L.min <- Photo$corr.rate*60*60 #converts to µmol L-1 hr-1
+Resp$rate.L.min <- Resp$corr.rate*60*60 #converts to µmol L-1 hr-1
 
-#Account for chamber size and sample displacement
+#Convert to µmol min-1
 Photo$rate.min <- Photo$rate.L.min*Photo$Vol.L 
 Resp$rate.min <- Resp$rate.L.min*Resp$Vol.L 
 
-#Normalize to Surface Area
+#Convert to µmol cm-2 min-1 (Normalize to Surface Area)
 Photo$rate <- Photo$rate.min/Photo$SA.total.initial.cm2
 Resp$rate <- Resp$rate.min/Resp$SA.total.initial.cm2
   
-#Photo$rate <- Photo$rate*60
-#Resp$rate <- Resp$rate*60
-
-#Test against data selected by eye
-
-par(mfrow=c(1,2))
-plot(Sample.Info$Pnet_umol.L.min, Photo$rate)
-plot(Sample.Info$Rdark_umol.L.min, Resp$rate)
 
 
 #calculate gross photosynthesis Pnet -- Rdark
-resp.data <- merge(Photo[,c(1,4,5,17)],Resp[,c(1,17)],  by="Fragment.ID")
+resp.data <- merge(Photo[,c(1,4,5,12)],Resp[,c(1,12)],  by="Fragment.ID")
 colnames(resp.data)[4] <- "Pnet_umol.cm2.hr"
 colnames(resp.data) [5] <- "Rdark_umol.cm2.hr"
 resp.data$Pgross_umol.cm2.hr <- resp.data$Pnet_umol.cm2.hr-resp.data$Rdark_umol.cm2.hr
