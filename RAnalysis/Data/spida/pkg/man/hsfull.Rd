@@ -1,0 +1,68 @@
+\name{hsfull}
+\Rdversion{1.1}
+\alias{hsfull}
+\alias{hs}
+\alias{hs1}
+\alias{hs2}
+\concept{SPIDA 2009}
+\concept{hierarchical data}
+\concept{observational data}
+\docType{data}
+\title{
+Math achievement and ses in a sample of 160 U.S. schools from the 1982 study ``High School and Beyond''.
+%%   ~~ data name/kind ... ~~
+}
+\description{
+This is a classical data set from the field of education used to illustrate
+multilevel data and models. It is used in the first edition of Bryk and Raudenbush.
+\code{hsfull} is the complete data set with 160 high schools,
+\code{hs} is a random subset of 40 high schools, \code{hs1} is a random subset of
+80 schools and \code{h2} contains the complement of \code{hs1}.  These two subsets
+can be used to illustrate split sample validation: develop a model on one half of the data
+and assess its performance on the other.
+complementary
+}
+\usage{
+  data(hsfull)
+
+  data(hs)
+  
+  data(hs1)
+  
+  data(hs2)
+  }
+
+\format{
+  A data frame with 7185 observations on the following 9 variables.
+  \describe{
+    \item{\code{school}}{school id}
+    \item{\code{mathach}}{measure of math achievment}
+    \item{\code{ses}}{socio-economic status of family}
+    \item{\code{Sex}}{a factor with levels \code{Female} \code{Male}}
+    \item{\code{Minority}}{a factor with levels \code{No} \code{Yes}}
+    \item{\code{Size}}{the size of the school}
+    \item{\code{Sector}}{a factor with levels \code{Catholic} \code{Public}}
+    \item{\code{PRACAD}}{a measure of the priority given by the school to academic subjects}
+    \item{\code{DISCLIM}}{a measure of the disciplinary climate in the school}
+  }
+}
+\details{
+Each row consists of the data for one student.   \code{hsfull} is the complete data set. \code{hs1} and \code{hs2}
+are complementary split halves of the schools in the data. \code{hs} is a selection of 40 schools
+which seems to be a good number of clusters for presentations in class.
+%%  ~~ If necessary, more details than the __description__ above ~~
+}
+\source{
+Bryk and Raudenbush (COMPLETE)
+}
+\references{
+%%  ~~ possibly secondary sources and usages ~~
+Raudenbush, Stephen and Bryk, Anthony (2002),
+Hierarchical Linear Models: Applications and Data Analysis Methods, Sage (chapter 4).
+}
+\examples{
+xqplot(hsfull)
+xqplot( up( hsfull, ~ school) )
+## maybe str(hsfull) ; plot(hsfull) ...
+}
+\keyword{datasets}

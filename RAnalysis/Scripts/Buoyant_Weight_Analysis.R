@@ -303,16 +303,22 @@ Fig.G.SA <- ggplot(Growth.SA, aes(x=Time, y=mean, group=TS)) +
   scale_shape_manual(values=c(1,19)) + #sets point shape manually
   geom_line(aes(linetype=Treatment), position = position_dodge(width = 0.2), size = 0.5) + #add lines
   xlab("Time") + #Label the X Axis
-  ylab("Growth mg cm-2 d-1") + #Label the Y Axis
+  ylab(expression(paste(bold(Growth~(mg~CaCO[3]~cm^{-2}~d^{-1}))))) + #label y axis
   scale_x_discrete(labels=c("April01","April20","May25","June17", "July15", "August12")) +
   theme_bw() + #Set the background color
   theme(axis.line = element_line(color = 'black'), #Set the axes color
-        axis.title=element_text(size=14,face="bold"), #Set axis format
+        axis.text=element_text(size=16), #set text size
+        axis.title=element_text(size=18,face="bold"), #set axis title text size
+        strip.text.x = element_text(size = 16, colour = "black", face="bold"),
+        axis.text.x=element_text(angle=-90),
         panel.border = element_blank(), #Set the border
+        axis.line.x = element_line(color = 'black'), #Set the axes color
+        axis.line.y = element_line(color = 'black'), #Set the axes color
         panel.grid.major = element_blank(), #Set the major gridlines
         panel.grid.minor = element_blank(), #Set the minor gridlines
         plot.background =element_blank(), #Set the plot background
         legend.key = element_blank()) #Set plot legend key
+
 Fig.G.SA
 
 setwd("/Users/hputnam/MyProjects/Mcap_PGA_TGA/RAnalysis/Output/") #set working
@@ -323,7 +329,7 @@ ggsave(file="Calcification.pdf", Fig.G.SA, width = 11, height = 6, units = c("in
 ###Repeated Measures ANOVA
 G.RM <- melt(G.SA) #reshape into long format
 
-Growth.RM.lme <- lme(value ~ variable*Parental.Performance*Treatment, random = ~ variable|Fragment.ID, data=na.omit(G.RM)) #repeated measures ANOVA with random intercept but not slope (clonal fragments expect to respond the same)
+Growth.RM.lme <- lme(value ~ variable*Parental.Performance*Treatment, random = ~ 1|Fragment.ID, data=na.omit(G.RM)) #repeated measures ANOVA with random intercept but not slope (clonal fragments expect to respond the same)
 Growth.results <- summary(Growth.RM.lme) #view RM ANOVA summary
 Growth.stats <- anova(Growth.RM.lme) #view F and p values
 Growth.stats

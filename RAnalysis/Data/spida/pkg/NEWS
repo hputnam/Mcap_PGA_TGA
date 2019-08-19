@@ -1,0 +1,37 @@
+Current todo list:
+
+  o Modify Lform so numerical variables can be symbolically differentiated
+  o Modify Lform to allow easier differencing of factors
+  o ++ Modify 'tab' to use approach in 'xapply' so weights can be provided asLHS of fomula
+	o Include links to Labs 1 to 3
+	o clean up Rd files
+	o all Leff2, etc. to Leff.Rd file
+	o clean up Leff.R
+	o figure out how to include pdf files for splines, effects, etc.
+
+Current bugs:
+
+	o on todo list
+
+Changes in beta version (2011-02-27 ++):
+
+  o Added getFix.zeroinfl (2011-11-26)
+  o Added 'weights' for 'tab' (2011-11-26) will add weights as lhs
+  o Added 'gicc' for generalized ICC for multilevel data (2011-03-01)
+  o Tools for effect plots: Leff and related functions  (in Leff.R)
+
+Branch from spida: (2011-02-27)
+ 
+Changes: (01-03-2011)
+	o Added 'gicc' for generalized ICC for multilevel data
+
+
+Version 0.1-1 (07-19-2010)
+	o Fixed brace() for R
+	o Begin minor documentation changes
+	o Merged (ell.Rd, ellplus.Rd) -> ell.Rd; (dell.Rd, dellplus.Rd) -> dell.Rd
+	o Fix T/F -> TRUE/FALSE in wald.R, fun.R
+	o Fix getFix.* as S3 methods; merged all getFix.*.Rd -> getFix.Rd
+
+Version 0.1
+	o Initial version on R-Forge

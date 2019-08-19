@@ -12,6 +12,7 @@ library("segmented")
 library("plotrix")
 library("gridExtra")
 library("MASS")
+library("tidyr")
 
 #Required Data files
 
@@ -55,6 +56,7 @@ fecundity.data$aug <- rowSums(fecundity.data[,c("bundle.vol_aug1", "bundle.vol_a
 fecundity.data$aug[fecundity.data$aug == 0] <- NA
 
 fecund <- merge(fecundity.data, SA.Data)
+fecund <- fecund %>% drop_na(Treatment)
 fecund$june.ml.SA <- (fecund$june/fecund$SA.total.initial.cm2)*10^4
 fecund$july.ml.SA <- (fecund$july/fecund$SA.total.initial.cm2)*10^4
 fecund$aug.ml.SA <- (fecund$aug/fecund$SA.total.initial.cm2)*10^4
@@ -160,26 +162,30 @@ Fig.tot.Fecundity <- ggplot(tot.fec.means, aes(x=Treatment, y=mean, group=Parent
   scale_shape_manual(values=c(1,19)) + #sets point shape manually
   geom_line(aes(), position = position_dodge(width = 0.2), size = 0.5) + #add lines
   xlab("Treatment") + #Label the X Axis
-  ylab(expression(Fecundity~ml~cm^{-2}~x~10^{4})) + #Label the Y Axis
-  #expression(Concentration~mg~L^{-1}))
-  ylim(0, 2) + #set Y limits
+  ylab(expression(paste(bold(Fecundity~ml~cm^{-2}~x~10^{4})))) + #Label the Y Axis
   theme_bw() + #Set the background color
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), #Set the text angle
-        axis.line = element_line(color = 'black'), #Set the axes color
+  theme(axis.line = element_line(color = 'black'), #Set the axes color
+        axis.text=element_text(size=16), #set text size
+        axis.title=element_text(size=18,face="bold"), #set axis title text size
+        strip.text.x = element_text(size = 16, colour = "black", face="bold"),
+        axis.text.x=element_text(angle=90),
         panel.border = element_blank(), #Set the border
+        axis.line.x = element_line(color = 'black'), #Set the axes color
+        axis.line.y = element_line(color = 'black'), #Set the axes color
         panel.grid.major = element_blank(), #Set the major gridlines
         panel.grid.minor = element_blank(), #Set the minor gridlines
-        plot.background=element_blank(),  #Set the plot background
-        legend.key = element_blank(),  #remove legend background
-        legend.position=c(.5, .8)) + #set legend location 
+        plot.background =element_blank(), #Set the plot background
+        legend.position="none",
+        plot.title = element_text(face = 'bold', size = 12, hjust = 0)) + #Set plot legend key
   ggtitle("B) Fecundity") + #add a main title
   theme(plot.title = element_text(face = 'bold', 
-                                size = 12, 
+                                size = 16, 
                                 hjust = 0)) #set title attributes
 Fig.tot.Fecundity 
 
 dev.off()
-Fec.lm <- lm(log10(tot.ml.SA) ~ Parental.Performance*Treatment, data=fecund)
+
+Fec.lm <- lm(log10(tot.ml.SA) ~ Parental.Performance, data=fecund)
 Fec.res <- anova(Fec.lm)
 Fec.res 
 par(mfrow=c(1,3))
@@ -192,6 +198,20 @@ fecund$tot.ml.SA
 tbl <- table(fecund$spawn, fecund$Treatment, fecund$Parental.Performance) #generate a spawning table
 tbl #view table
 chisq.test(tbl) #chi square test of independence H0 there is no difference in spawning (1) and nonspawning (0) between bleached and unbleached histories and ambient and high pCO2
+
+
+
+Spawn <- c(11,  	6,  	16,  	7)  
+NotSpawn <- c(9, 	14,  	3,  	13)
+sp.tbl <- rbind(Spawn,NotSpawn)
+colnames(sp.tbl) <- c("AB",	"ANB",	"HB",	"HNB")
+chisq.test(sp.tbl) #chi square test of independence H0 there is no difference in spawning (1) and nonspawning (0) between bleached and unbleached histories and ambient and high pCO2
+
+Spawn <- c(11,  16)  
+NotSpawn <- c(9, 3)
+sp.tbl <- rbind(Spawn,NotSpawn)
+colnames(sp.tbl) <- c("AB",		"HB")
+chisq.test(sp.tbl) #chi square test of independence H0 there is no difference in spawning (1) and nonspawning (0) between bleached and unbleached histories and ambient and high pCO2
 
 
 spawning.freq <- aggregate(spawn ~ Treatment*Parental.Performance, data=fecund, sum)
@@ -211,8 +231,9 @@ no.spawn$Spawn <- "No"
 spawning.data <- rbind(spawning, no.spawn)
 spawning.data$TP <- paste(spawning.data$Parental.Performance, spawning.data$Treatment, sep='_') #add a concatenated history by treatment grouping
 
-Fig.Spawning <- ggplot(spawning.data, aes(x=TP, y=prop, fill=Spawn)) + 
+Fig.Spawning <- ggplot(spawning.data, aes(x=Treatment, y=prop, fill=Spawn)) + 
   geom_bar(stat="identity") +
+  facet_grid(.~Parental.Performance,space="free",scales="free_x")+
   scale_fill_manual(values=c("gray", "black")) +
   xlab("Treatment") + #Label the X Axis
   ylab("Proportion Spawning") + #Label the Y Axis
@@ -220,7 +241,12 @@ Fig.Spawning <- ggplot(spawning.data, aes(x=TP, y=prop, fill=Spawn)) +
   theme_bw() + #Set the background color
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         axis.line = element_line(color = 'black'), #Set the axes color
+        axis.text=element_text(size=16), #set text size
+        axis.title=element_text(size=18,face="bold"), #set axis title text size
+        strip.text.x = element_text(size = 16, colour = "black", face="bold"),
         panel.border = element_blank(), #Set the border
+        axis.line.x = element_line(color = 'black'), #Set the axes color
+        axis.line.y = element_line(color = 'black'), #Set the axes color
         panel.grid.major = element_blank(), #Set the major gridlines
         panel.grid.minor = element_blank(), #Set the minor gridlines
         plot.background =element_blank(), #Set the plot background
@@ -228,7 +254,7 @@ Fig.Spawning <- ggplot(spawning.data, aes(x=TP, y=prop, fill=Spawn)) +
         legend.position="top") + #set legend location
   ggtitle("A) Proportion Spawning") + #add a main title
   theme(plot.title = element_text(face = 'bold', 
-                                  size = 12, 
+                                  size = 16, 
                                   hjust = 0)) #set title attributes
 Fig.Spawning
 
@@ -240,28 +266,73 @@ larval.counts$Avg.Count <- rowMeans(larval.counts[,c("Count1", "Count2", "Count3
 larval.counts$larvae.per.ml <- larval.counts$Avg.Count/larval.counts$Sample.vol #calculate density
 larval.counts$total.larvae <- larval.counts$Avg.Count/(larval.counts$Sample.vol/larval.counts$Tripour.vol)
 
-#Survivorship
-Survive <- reshape(larval.counts, idvar = "Conical", timevar = "Time.Point", direction = "wide")
-Survive$Percent.Sur <- 100- ((Survive$total.larvae.Time1 - Survive$total.larvae.Time2)/Survive$total.larvae.Time1)*100
-
-#Treatments
-gmean_Sur <- tapply(Survive$Percent.Sur, list(Survive$Group.Time1), mean, na.rm = TRUE)
-gse_Sur <- tapply(Survive$Percent.Sur , list(Survive$Group.Time1), std.error, na.rm = TRUE)
-gmean_Sur <- as.data.frame(cbind(gmean_Sur, gse_Sur))
-
-sur.mean <- aggregate(Percent.Sur ~ Parental.Performance.Time1*Parent.Treatment.Time1*Larval.Treatment.Time1, data=Survive, mean)
-sur.se <- aggregate(Percent.Sur ~ Parental.Performance.Time1*Parent.Treatment.Time1*Larval.Treatment.Time1, data=Survive, std.error)
-sur.n <- aggregate(Percent.Sur ~ Parental.Performance.Time1*Parent.Treatment.Time1*Larval.Treatment.Time1, data=Survive, length)
-
-Sur.means <- cbind(sur.mean, sur.se$Percent.Sur, sur.n$Percent.Sur)
-colnames(Sur.means) <-c("Parental.Performance",  "Parent.Treatment",  "Larval.Treatment",	"mean", "se", "n")
+#June Survivorship
+June <- subset(larval.counts, Month=="June")
+June.Survive <- reshape(June, idvar = "Conical", timevar = "Time.Point", direction = "wide")
+June.Survive$Percent.Sur <- 100- ((June.Survive$total.larvae.Time1 - June.Survive$total.larvae.Time2)/June.Survive$total.larvae.Time1)*100
+june.mean <- aggregate(Percent.Sur ~ Parental.Performance.Time1*Parent.Treatment.Time1*Larval.Treatment.Time1, data=June.Survive, mean)
+june.se <- aggregate(Percent.Sur ~ Parental.Performance.Time1*Parent.Treatment.Time1*Larval.Treatment.Time1, data=June.Survive, std.error)
+june.n <- aggregate(Percent.Sur ~ Parental.Performance.Time1*Parent.Treatment.Time1*Larval.Treatment.Time1, data=June.Survive, length)
+june.means <- cbind(june.mean, june.se$Percent.Sur, june.n$Percent.Sur)
+colnames(june.means) <-c("Parental.Performance",  "Parent.Treatment",  "Larval.Treatment",	"mean", "se", "n")
+june.means$group <- paste(june.means$Parental.Performance,june.means$Parent.Treatment, sep="")
 
 
-Fig.Sur <-  ggplot(Sur.means, aes(x=Larval.Treatment, y=mean,  group=Parental.Performance)) + #set up plot information
+Fig.June.Sur <-  ggplot(june.means, aes(x=Larval.Treatment, y=mean,  group=Parental.Performance)) + #set up plot information
   geom_errorbar(aes(x=Larval.Treatment, ymax=mean+se, ymin=mean-se), colour="black", width=.1, position = position_dodge(width = 0.2)) + #add standard error bars about the mean
   geom_point(aes(shape=Parental.Performance), position = position_dodge(width = 0.2), size=4) + #plot points
   scale_shape_manual(values=c(1,19)) + #sets point shape manually
   geom_line(aes(), position = position_dodge(width = 0.2), size = 0.5) + #add lines
+  xlab("Larval Treatment") + #label x axis
+  ylab("% Survivorship") + #label y axis
+  ylim(0,35)+
+  theme_bw() + #Set the background color
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        axis.line = element_line(color = 'black'), #Set the axes color
+        axis.text=element_text(size=16), #set text size
+        axis.title=element_text(size=18,face="bold"), #set axis title text size
+        strip.text.x = element_text(size = 16, colour = "black", face="bold"),
+        panel.border = element_blank(), #Set the border
+        axis.line.x = element_line(color = 'black'), #Set the axes color
+        axis.line.y = element_line(color = 'black'), #Set the axes color
+        panel.grid.major = element_blank(), #Set the major gridlines
+        panel.grid.minor = element_blank(), #Set the minor gridlines
+        plot.background =element_blank(), #Set the plot background
+        legend.key = element_blank(),  #remove legend background
+        legend.position=c(.6, .8)) + #set legend location  
+  ggtitle("C) Larval Survivorship") + #add a main title
+  theme(plot.title = element_text(face = 'bold', 
+                                  size = 16, 
+                                  hjust = 0)) #set title attributes
+Fig.June.Sur #view plot
+
+June.Sur.lm <- lm(sqrt(Percent.Sur) ~ Parental.Performance.Time1*Larval.Treatment.Time1, data=June.Survive)
+June.Sur.res <- anova(June.Sur.lm)
+June.Sur.res
+par(mfrow=c(1,3))
+hist(June.Sur.lm$residuals)
+boxplot(June.Sur.lm$residuals)
+qqplot(June.Sur.lm$fitted.values, June.Sur.lm$residuals)
+
+#July Survivorship
+July <- subset(larval.counts, Month=="July")
+July.Survive <- reshape(July, idvar = "Conical", timevar = "Time.Point", direction = "wide")
+July.Survive$Percent.Sur <- 100- ((July.Survive$total.larvae.Time1 - July.Survive$total.larvae.Time2)/July.Survive$total.larvae.Time1)*100
+July.mean <- aggregate(Percent.Sur ~ Parental.Performance.Time1*Parent.Treatment.Time1*Larval.Treatment.Time1, data=July.Survive, mean)
+July.se <- aggregate(Percent.Sur ~ Parental.Performance.Time1*Parent.Treatment.Time1*Larval.Treatment.Time1, data=July.Survive, std.error)
+July.n <- aggregate(Percent.Sur ~ Parental.Performance.Time1*Parent.Treatment.Time1*Larval.Treatment.Time1, data=July.Survive, length)
+July.means <- cbind(July.mean, July.se$Percent.Sur, July.n$Percent.Sur)
+colnames(July.means) <-c("Parental.Performance",  "Parent.Treatment",  "Larval.Treatment",  "mean", "se", "n")
+July.means$group <- paste(July.means$Parental.Performance,July.means$Parent.Treatment, sep="")
+
+
+### Need to fix lines
+Fig.July.Sur <-  ggplot(July.means, aes(x=Larval.Treatment, y=mean,  group=group)) + #set up plot information
+  geom_errorbar(aes(x=Larval.Treatment, ymax=mean+se, ymin=mean-se), colour="black", width=.1, position = position_dodge(width = 0.2)) + #add standard error bars about the mean
+  geom_point(aes(shape=Parental.Performance), position = position_dodge(width = 0.2), size=4) + #plot points
+  scale_shape_manual(values=c(1,19)) + #sets point shape manually
+  geom_line(position = position_dodge(width = 0.2), size = 0.5) + #add lines
+  scale_linetype_manual(values = c("solid","dashed", 6))+
   xlab("Larval Treatment") + #label x axis
   ylab("% Survivorship") + #label y axis
   ylim(0,35)+
@@ -273,25 +344,75 @@ Fig.Sur <-  ggplot(Sur.means, aes(x=Larval.Treatment, y=mean,  group=Parental.Pe
         panel.grid.minor = element_blank(), #Set the minor gridlines
         plot.background=element_blank(),  #Set the plot background
         legend.key = element_blank(),  #remove legend background
-        legend.position='none') + #set legend location 
+        legend.position=c(.6, .8)) + #set legend location  
+  ggtitle("C) July Larval Survivorship") + #add a main title
+  theme(plot.title = element_text(face = 'bold', 
+                                  size = 16, 
+                                  hjust = 0)) #set title attributes
+Fig.July.Sur #view plot
+
+July.Sur.lm <- lm(sqrt(Percent.Sur) ~ Parental.Performance.Time1*Parent.Treatment.Time1*Larval.Treatment.Time1, data=July.Survive)
+July.Sur.res <- anova(July.Sur.lm)
+July.Sur.res
+par(mfrow=c(1,3))
+hist(July.Sur.lm$residuals)
+boxplot(July.Sur.lm$residuals)
+qqplot(July.Sur.lm$fitted.values, July.Sur.lm$residuals)
+
+
+BH.comp <-  subset(larval.counts, Parent.Treatment=="High")
+BH.comp.Survive <- reshape(BH.comp, idvar = "Conical", timevar = "Time.Point", direction = "wide")
+BH.comp.Survive$Percent.Sur <- 100- ((BH.comp.Survive$total.larvae.Time1 - BH.comp.Survive$total.larvae.Time2)/BH.comp.Survive$total.larvae.Time1)*100
+BH.comp.mean <- aggregate(Percent.Sur ~ Parental.Performance.Time1*Parent.Treatment.Time1*Larval.Treatment.Time1, data=BH.comp.Survive, mean)
+BH.comp.se <- aggregate(Percent.Sur ~ Parental.Performance.Time1*Parent.Treatment.Time1*Larval.Treatment.Time1, data=BH.comp.Survive, std.error)
+BH.comp.n <- aggregate(Percent.Sur ~ Parental.Performance.Time1*Parent.Treatment.Time1*Larval.Treatment.Time1, data=BH.comp.Survive, length)
+BH.comp.means <- cbind(BH.comp.mean, BH.comp.se$Percent.Sur, BH.comp.n$Percent.Sur)
+colnames(BH.comp.means) <-c("Parental.Performance",  "Parent.Treatment",  "Larval.Treatment",	"mean", "se", "n")
+BH.comp.means$group <- paste(BH.comp.means$Parental.Performance,BH.comp.means$Parent.Treatment, sep="")
+
+
+Fig.BH.comp.Sur <-  ggplot(BH.comp.means, aes(x=Larval.Treatment, y=mean,  group=Parental.Performance)) + #set up plot information
+  geom_errorbar(aes(x=Larval.Treatment, ymax=mean+se, ymin=mean-se), colour="black", width=.1, position = position_dodge(width = 0.2)) + #add standard error bars about the mean
+  geom_point(aes(shape=Parental.Performance), position = position_dodge(width = 0.2), size=4) + #plot points
+  scale_shape_manual(values=c(1,19)) + #sets point shape manually
+  geom_line(aes(), position = position_dodge(width = 0.2), size = 0.5) + #add lines
+  xlab("Larval Treatment") + #label x axis
+  ylab("% Survivorship") + #label y axis
+  ylim(0,35)+
+  theme_bw() + #Set the background color
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        axis.line = element_line(color = 'black'), #Set the axes color
+        axis.text=element_text(size=16), #set text size
+        axis.title=element_text(size=18,face="bold"), #set axis title text size
+        strip.text.x = element_text(size = 16, colour = "black", face="bold"),
+        panel.border = element_blank(), #Set the border
+        axis.line.x = element_line(color = 'black'), #Set the axes color
+        axis.line.y = element_line(color = 'black'), #Set the axes color
+        panel.grid.major = element_blank(), #Set the major gridlines
+        panel.grid.minor = element_blank(), #Set the minor gridlines
+        plot.background =element_blank(), #Set the plot background
+        legend.key = element_blank(),  #remove legend background
+        legend.position=c(.6, .8)) + #set legend location  
   ggtitle("C) Larval Survivorship") + #add a main title
   theme(plot.title = element_text(face = 'bold', 
-                                  size = 12, 
+                                  size = 16, 
                                   hjust = 0)) #set title attributes
-Fig.Sur #view plot
+Fig.BH.comp.Sur #view plot
 
-Sur.lm <- lm(sqrt(Percent.Sur) ~ Parental.Performance.Time1*Larval.Treatment.Time1, data=Survive)
-Sur.res <- anova(Sur.lm)
-Sur.res
+
+BH.Sur.lm <- lm(sqrt(Percent.Sur) ~ Parental.Performance.Time1*Larval.Treatment.Time1, data=BH.comp.Survive)
+BH.Sur.res <- anova(BH.Sur.lm)
+BH.Sur.res
 par(mfrow=c(1,3))
-hist(Sur.lm$residuals)
-boxplot(Sur.lm$residuals)
-qqplot(Sur.lm$fitted.values, Sur.lm$residuals)
+hist(BH.Sur.lm$residuals)
+boxplot(BH.Sur.lm$residuals)
+qqplot(BH.Sur.lm$fitted.values, BH.Sur.lm$residuals)
+
 
 
 
 setwd("/Users/hputnam/MyProjects/Mcap_PGA_TGA/RAnalysis/Output/") #set working
-Repro <- arrangeGrob(Fig.Spawning, Fig.tot.Fecundity, Fig.Sur, ncol=3)
-ggsave(file="Reproduction.pdf", Repro, width = 11, height = 6, units = c("in"))
+Repro <- arrangeGrob(Fig.Spawning, Fig.tot.Fecundity, Fig.BH.comp.Sur, ncol=3)
+ggsave(file="Reproduction.pdf", Repro, width = 16, height = 5, units = c("in"))
 
 

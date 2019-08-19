@@ -267,8 +267,13 @@ Fig.PAM <- ggplot(Yield, aes(x=Time, y=mean, group=TP)) +
   scale_x_discrete(labels=c("Feb28", "March10", "March17", "March24", "April07", "April21", "May05", "May19", "June16", "July14", "August11")) +
   theme_bw() + #Set the background color
   theme(axis.line = element_line(color = 'black'), #Set the axes color
-        axis.title=element_text(size=14,face="bold"), #Set axis format
+        axis.text=element_text(size=16), #set text size
+        axis.title=element_text(size=18,face="bold"), #set axis title text size
+        strip.text.x = element_text(size = 16, colour = "black", face="bold"),
+        axis.text.x=element_text(angle=-90),
         panel.border = element_blank(), #Set the border
+        axis.line.x = element_line(color = 'black'), #Set the axes color
+        axis.line.y = element_line(color = 'black'), #Set the axes color
         panel.grid.major = element_blank(), #Set the major gridlines
         panel.grid.minor = element_blank(), #Set the minor gridlines
         plot.background =element_blank(), #Set the plot background
@@ -280,18 +285,18 @@ setwd("/Users/hputnam/MyProjects/Mcap_PGA_TGA/RAnalysis/Output/") #set working
 ggsave(file="PAM.pdf", Fig.PAM, width = 11, height = 6, units = c("in"))
 
 
-
-
 ###Repeated Measures ANOVA
-PAM.RM.lme <- lme(Yield ~ Time*Parental.Performance*Treatment, random = ~ Time|Fragment.ID, data=na.omit(PAM.long)) #repeated measures ANOVA with random intercept but not slope (clonal fragments expect to respond the same)
+PAM.RM.lme <- lme(Yield ~ Time*Parental.Performance*Treatment, random = ~ 1|Fragment.ID, data=na.omit(PAM.long)) #repeated measures ANOVA with random intercept but not slope (clonal fragments expect to respond the same)
 PAM.results <- summary(PAM.RM.lme) #view RM ANOVA summary
 PAM.stats <- anova(PAM.RM.lme) #view F and p values
 PAM.stats
 
-PAM.RM.posthoc <- lsmeans(PAM.RM.lme, specs=c("variable","Parental.Performance")) #calculate MS means
+PAM.RM.posthoc <- lsmeans(PAM.RM.lme, specs=c("Time","Treatment","Parental.Performance")) #calculate MS means
 PAM.RM.posthoc #view results
-PAM.RM.posthoc.p <- contrast(PAM.RM.posthoc, method="pairwise", by=c("variable")) #contrast treatment groups within a species at each time point
+PAM.RM.posthoc.p <- contrast(PAM.RM.posthoc, method="pairwise", by=c("Parental Performance")) #contrast treatment groups within a species at each time point
 PAM.RM.posthoc.p #view results
+
+cld(PAM.RM.posthoc,alpha=0.05,Letters=letters, adjust="tukey")
 
 ###Testing ANOVA Assumptions
 ###Data are normally distributed
